@@ -82,8 +82,6 @@ try {
     error: err.message
   });
 }
-});
-
 //PCO Dry-RUN CODE
 const pco = getPlanningCenterClient();
 
@@ -94,6 +92,9 @@ const response = await pco.get('/calendar/v2/events', {
 console.log('Planning Center response sample:', {
   count: response.data?.data?.length,
   firstEvent: response.data?.data?.[0]?.attributes?.name
+});
+
+
 });
 
 
