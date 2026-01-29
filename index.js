@@ -94,6 +94,54 @@ console.log('Planning Center response sample:', {
   firstEvent: response.data?.data?.[0]?.attributes?.name
 });
 
+//OAuth Routes
+app.get('/oauth/start', (req, res) => {
+  const { PCO_APP_ID, PCO_REDIRECT_URI } = process.env;
+
+  const authUrl =
+    `https://api.planningcenteronline.com/oauth/authorize` +
+    `?client_id=${PCO_APP_ID}` +
+    `&redirect_uri=${encodeURIComponent(PCO_REDIRECT_URI)}` +
+    `&response_type=code`;
+
+  res.redirect(authUrl);
+});
+
+app.get('/oauth/callback', async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+    return res.status(400).send('Missing authorization code');
+  }
+
+  try {
+    const tokenResponse = await axios.post(
+      'https://api.planningcenteronline.com/oauth/token',
+      {
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: process.env.PCO_REDIRECT_URI,
+        client_id: process.env.PCO_APP_ID,
+        client_secret: process.env.PCO_SECRET
+      },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    const { access_token } = tokenResponse.data;
+
+    // TEMPORARY: log token to verify success (we’ll store it properly next)
+    console.log('PCO ACCESS TOKEN:', access_token);
+
+    res.send(
+      'Authorization successful. You can close this window.'
+    );
+
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).send('OAuth failed');
+  }
+});
+
 
 });
 
