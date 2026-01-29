@@ -4,6 +4,9 @@ require('dotenv').config();
 //Call to Airtable
 const Airtable = require('airtable');
 
+// Call to Axios
+const axios = require('axios');
+
 //test code
 const express = require('express');
 const app = express();
@@ -81,6 +84,19 @@ try {
 }
 });
 
+//PCO Dry-RUN CODE
+const pco = getPlanningCenterClient();
+
+const response = await pco.get('/calendar/v2/events', {
+  params: { per_page: 1 }
+});
+
+console.log('Planning Center response sample:', {
+  count: response.data?.data?.length,
+  firstEvent: response.data?.data?.[0]?.attributes?.name
+});
+
+
 //Airtable Coding
 function getAirtableBase() {
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID } = process.env;
@@ -94,4 +110,21 @@ function getAirtableBase() {
   });
 
   return Airtable.base(AIRTABLE_BASE_ID);
+}
+
+//Axios Helper - PCO
+function getPlanningCenterClient() {
+  const { PCO_APP_ID, PCO_SECRET } = process.env;
+
+  if (!PCO_APP_ID || !PCO_SECRET) {
+    throw new Error('Planning Center credentials not set');
+  }
+
+  return axios.create({
+    baseURL: 'https://api.planningcenteronline.com',
+    auth: {
+      username: PCO_APP_ID,
+      password: PCO_SECRET
+    }
+  });
 }
