@@ -18,3 +18,14 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+//sync Endpoint
+app.post('/sync', (req, res) => {
+  console.log('Manual sync triggered');
+
+  res.json({
+    ok: true,
+    message: 'Sync triggered (no-op)',
+    timestamp: new Date().toISOString()
+  });
+});
