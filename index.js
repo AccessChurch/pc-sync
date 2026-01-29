@@ -17,6 +17,10 @@ app.get('/', (req, res) => {
   res.send('Hello from pc-sync 👋');
 });
 
+app.get('/oauth/callback', (req, res) => {
+  res.send('OAuth callback reached ✅ (code received)');
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
