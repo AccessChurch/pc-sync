@@ -38,6 +38,7 @@ app.get('/oauth/start', (req, res) => {
     `?client_id=${PCO_APP_ID}` +
     `&redirect_uri=${encodeURIComponent(PCO_REDIRECT_URI)}` +
     `&response_type=code`;
+    `&scope=calendar`;
 
   res.redirect(authUrl);
 });
