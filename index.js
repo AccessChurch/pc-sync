@@ -17,10 +17,53 @@ app.get('/', (req, res) => {
   res.send('Hello from pc-sync 👋');
 });
 
-app.get('/oauth/callback', (req, res) => {
-  res.send('OAuth callback reached ✅ (code received)');
+//Oauth Call Back Code
+app.get('/oauth/callback', async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+    return res.status(400).send('Missing authorization code');
+  }
+
+  try {
+    const tokenResponse = await axios.post(
+      'https://api.planningcenteronline.com/oauth/token',
+      {
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: process.env.PCO_REDIRECT_URI,
+        client_id: process.env.PCO_APP_ID,
+        client_secret: process.env.PCO_SECRET
+      },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    const { access_token, refresh_token, expires_in } = tokenResponse.data;
+
+    // IMPORTANT: Do NOT log tokens
+    console.log('OAuth success: token received');
+
+    // For now, show you what to do next (store token in Railway)
+    res.send(
+      `OAuth successful ✅
+
+Next step:
+1) Copy the access token from this page (temporary)
+2) Add it to Railway Variables as PCO_ACCESS_TOKEN
+3) Click Apply changes
+
+Access token:
+${access_token}
+
+(We will improve this in the next step by storing tokens securely and using refresh tokens.)`
+    );
+  } catch (err) {
+    console.error('OAuth failed:', err.response?.data || err.message);
+    res.status(500).send('OAuth failed');
+  }
 });
 
+//LISTEN CODE
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
