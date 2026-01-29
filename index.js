@@ -31,52 +31,42 @@ app.get('/health', (req, res) => {
 
 //OAuth Routes
 app.get('/oauth/start', (req, res) => {
-  const { PCO_APP_ID, PCO_REDIRECT_URI } = process.env;
+  const rawAppId = process.env.PCO_APP_ID;
+  const rawRedirect = process.env.PCO_REDIRECT_URI;
 
-  const authUrl =
-    `https://api.planningcenteronline.com/oauth/authorize` +
-    `?client_id=${PCO_APP_ID}` +
-    `&redirect_uri=${encodeURIComponent(PCO_REDIRECT_URI)}` +
-    `&response_type=code`;
-    `&scope=calendar:read`;
+  // Railway sometimes displays values with quotes; this strips wrapping quotes if they exist
+  const PCO_APP_ID = (rawAppId || '').replace(/^"|"$/g, '');
+  const PCO_REDIRECT_URI = (rawRedirect || '').replace(/^"|"$/g, '');
 
-  res.redirect(authUrl);
-});
-
-app.get('/oauth/callback', async (req, res) => {
-  const { code } = req.query;
-
-  if (!code) {
-    return res.status(400).send('Missing authorization code');
+  // Fail loudly (instead of redirecting with missing params)
+  if (!PCO_APP_ID || !PCO_REDIRECT_URI) {
+    return res.status(500).json({
+      ok: false,
+      error: 'Missing OAuth env vars',
+      hasPCO_APP_ID: !!PCO_APP_ID,
+      hasPCO_REDIRECT_URI: !!PCO_REDIRECT_URI,
+    });
   }
 
-  try {
-    const tokenResponse = await axios.post(
-      'https://api.planningcenteronline.com/oauth/token',
-      {
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: process.env.PCO_REDIRECT_URI,
-        client_id: process.env.PCO_APP_ID,
-        client_secret: process.env.PCO_SECRET
-      },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+  // Use URLSearchParams so scope is definitely included + properly encoded
+  const params = new URLSearchParams({
+    client_id: PCO_APP_ID,
+    redirect_uri: PCO_REDIRECT_URI,
+    response_type: 'code',
+    scope: 'calendar',     // <-- IMPORTANT
+    state: String(Date.now())
+  });
 
-    const { access_token } = tokenResponse.data;
+  const authUrl = `https://api.planningcenteronline.com/oauth/authorize?${params.toString()}`;
 
-    // TEMPORARY: log token to verify success (we’ll store it properly next)
-    console.log('PCO ACCESS TOKEN:', access_token);
-
-    res.send(
-      'Authorization successful. You can close this window.'
-    );
-
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.status(500).send('OAuth failed');
+  // Debug mode: shows the exact URL instead of redirecting
+  if (req.query.debug === '1') {
+    return res.json({ authUrl });
   }
+
+  return res.redirect(authUrl);
 });
+
 
 
 //sync Endpoint
