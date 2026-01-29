@@ -21,11 +21,28 @@ app.get('/health', (req, res) => {
 
 //sync Endpoint
 app.post('/sync', (req, res) => {
-  console.log('Manual sync triggered');
+  const providedSecret = req.headers['x-sync-secret'];
+  const expectedSecret = process.env.SYNC_SECRET;
+
+  if (!expectedSecret) {
+    return res.status(500).json({
+      ok: false,
+      error: 'Server misconfigured: SYNC_SECRET not set'
+    });
+  }
+
+  if (providedSecret !== expectedSecret) {
+    return res.status(401).json({
+      ok: false,
+      error: 'Unauthorized'
+    });
+  }
+
+  console.log('Authorized manual sync triggered');
 
   res.json({
     ok: true,
-    message: 'Sync triggered (no-op)',
+    message: 'Secure sync triggered (no-op)',
     timestamp: new Date().toISOString()
   });
 });
